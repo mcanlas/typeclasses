@@ -19,6 +19,16 @@ def sum[A : Semigroup](a: A, b: A): A =
 A design pattern for drivers
 
 
+# Haskell
+f() that.
+
+
+## A pattern as implemented in Scala
+* Traits
+* Type parameters
+* Implicits
+
+
 <code>Semigroup</code> is the type class
 <pre><code class="scala">def printAgg[A : Semigroup](a: A, b: A): Unit =
   printSum(a, b)
@@ -34,14 +44,15 @@ def sum[A : Semigroup](a: A, b: A): A =
 # Why type classes?
 
 
-## The ability to extend behavior<br>on arbitrary types
+## To extend behavior<br>on arbitrary types
 Including ones you can't control
 
 
-## The ability to easily provide<br>default drivers
+## To easily provide<br>default drivers
+And create new driver implementations
 
 
-## Consume drivers in a lightweight syntax
+## Consume drivers<br>in a lightweight syntax
 Either yours or ones given to you
 
 
@@ -59,14 +70,16 @@ class Sprocket</code></pre>
   def toJson: String
 }
 
-class Widget extends JsonWritable
+class Widget extends JsonWritable { ... }
 
-class Sprocket extends JsonWritable</code></pre>
+class Sprocket extends JsonWritable { ... }
+</code></pre>
 
 
 ## Extension via inheritance
 * Pro: easy to understand
 * Con: requires access to modify target types
+* Con: uses a class (implies state)
 
 
 <pre><code class="scala">final class Quark
@@ -74,30 +87,60 @@ class Sprocket extends JsonWritable</code></pre>
 // Int, String, Double</code></pre>
 
 
-<pre><code class="scala">class WritableQuark(q: Quark) extends JsonWritable
+<pre><code class="scala">class WritableQuark(q: Quark) extends JsonWritable  { ... }
 
-class WritableInt(i: Int) extends JsonWritable</code></pre>
+class WritableInt(i: Int) extends JsonWritable { ... }</code></pre>
 
 
 ## Extension via wrapping
 * Pro: easy to understand
-* Con: cognitive/mechnical overhead
+* Pro: Extension on sealed types
+* Con: uses a class (implies state)
+* Con: overhead
+  * Payload must always be wrapped
+  * Raw value must always be extracted
+
+
+How about static functions?
+
 
 <code>JsonWritable</code> is the type class
 <pre><code class="scala">trait JsonWritable[A] {
   def toJson(a: A): String
 }
 
-object QuarkWriter extends JsonWritable[Quark]
+object QuarkWriter extends JsonWritable[Quark] { ... }
 
-object IntWriter extends JsonWritable[Int]</code></pre>
+object IntWriter extends JsonWritable[Int] { ... }</code></pre>
+
+
+What would have been methods on a class instance are now in a static companion.
+<pre><code class="scala">val a = new WritableQuark(quark)
+
+type A = JsonWritable[Quark]
+</code></pre>
+
+
+## Type class
+A class/template for types
+<pre><code class="scala">val a = new WritableQuark(quark)
+
+type A = JsonWritable[Quark]
+</code></pre>
+
+
+<pre><code class="scala">// type A that can do behavior B
+// an A that can do B
+
+type X = B[A]
+</code></pre>
 
 
 ## Extension via static methods
 * Pro: Fundamentally a type class
 * Pro: Stateless (easy to test)
 * Pro: Extension on sealed types
-* Con: Boilerplate delivery
+* Con: Verbose delivery...
 
 
 
@@ -115,15 +158,32 @@ Of default implementations and yours.
 | List
 
 
-<pre><code class="scala">JsonWritable[Int] // framework
+<pre><code class="scala">// framework
+object IntWriter extends JsonWritable[Int]
 
-JsonWritable[Double] // framework
+// framework
+object DoubleWriter extends JsonWritable[Double]
 
-JsonWritable[Widget] // custom</code></pre>
+// custom
+object WidgetWriter extends JsonWritable[Widget]</code></pre>
 
 
-## Implicit delivery
-Run away!
+### Explicit dependency injection
+<pre><code class="scala">def inner(i: Int)(w: Writer[Int]): Unit = w(i)
+
+def outer1(i: Int)(w1: Writer[Int]): Unit = inner(i)(w1)
+
+def outer2(i: Int)(w2: Writer[Int]): Unit = outer1(i)(w2)
+
+def outer3(i: Int)(w3: Writer[Int]): Unit = outer2(i)(w3)
+
+outer3(42)(IntWriter)
+</code></pre>
+
+
+
+# Easy delivery
+Part I, simpler call sites
 
 
 # Implicits
@@ -178,7 +238,7 @@ implicit val b: Int = 3
 sum(2) // 5</code></pre>
 
 
-## Criteria:
+## Implicit resolution criteria:
 * In scope
 * Type fits
 * Marked as implicit
@@ -203,154 +263,72 @@ format(8675)
 
 <pre><code class="scala">def calculate(a: Int)(implicit ec: ExecutionContext)
 
-calculate(456)(global)
-
 // go away, compiler!
 import scala.concurrent.ExecutionContext.Implicits.global
+
+calculate(456)(global)
 
 calculate(123)</code></pre>
 
 
 ## Nested implicits
-<pre><code class="scala">def inner(implicit ai: Int): Unit =
-  println(ai)
+Implicit parameters of a function are implicit values for its body
 
-def outer(implicit ao: Int): Unit =
-  inner
 
-{
-  implicit val a = 3
-  outer
-}
+<pre><code class="scala">def inner(implicit i: Int): Unit = println(i)
 
-outer(4)
+def outer1(implicit o1: Int): Unit = inner
+
+def outer2(implicit o2: Int): Unit = outer1
+
+def outer3(implicit o3: Int): Unit = outer2
+
+implicit val a = 42
+outer3 // prints 42
 </code></pre>
 
 
-Good for hiding context that is necessary but not essential for a function
+<pre><code class="scala">def inner(implicit i: Int): Unit = println(i)
 
+def outer1(implicit o1: Int): Unit = inner
 
+def outer2(implicit o2: Int): Unit = outer1
 
-# Type classes
-Finally.
+def outer3(implicit o3: Int): Unit = outer2
 
-
-# Haskell
-f() that.
-
-
-## A pattern as implemented in Scala
-* Traits
-* Type parameters
-* Implicits
-
-
-## Clunky name
-
-
-## A class for types
-
-
-## What is a class?
-
-
-<pre><code class="scala">// a template for values
-final class Actor(name: String)</code></pre>
-
-
-<pre><code class="scala">// Actor itself is not a value
-type A = Actor</code></pre>
-
-
-<pre><code class="scala">// Template + Value(s) = Value</code></pre>
-
-
-# Type class
-## A template for types
-
-
-<pre><code class="scala">// F[_] + A = F[A]</code></pre>
-Note: Not every trait with a type parameter is a type class
-
-
-<pre><code class="scala">// Actor("Mark") is one value
-
-val x = new Actor("Mark")
-
-// F[A] ("F of A") is one type
-
-type X = F[A]</code></pre>
-
-
-## Encoding behavior
-<pre><code class="scala">trait Dancer[A]
-
-trait Comedian[A]
-
-// an actor, that can dance
-type A = Dancer[Actor]
-
-// an actor, that can do comedy
-type B = Comedian[Actor]
+outer3(42) // prints 42
 </code></pre>
 
 
-## Drivers
-Data classes, behavior on the outside.
-<pre><code class="scala">// an int that can be tripled
-type A = Triple[Int]
+Good for hiding context that is necessary<br>but not essential for a function
 
-// an int that can be written as json
-type B = JsonWriter[Int]
+
+### Implicit dependency injection
+<pre><code class="scala">def inner(i: Int)(implicit w: Writer[Int]): Unit = w.write(i)
+
+def outer1(i: Int)(implicit w1: Writer[Int]): Unit = inner(i)
+
+def outer2(i: Int)(implicit w2: Writer[Int]): Unit = outer1(i)
+
+def outer3(i: Int)(implicit w3: Writer[Int]): Unit = outer2(i)
+
+implicit val w = IntWriter
+outer3(42)
 </code></pre>
 
 
-* Static (stateless)
-* Canonical
+## Implicit dependency injection
+* Pro: Slims down call sites
+* Con: Bulkier function definitions
 
 
-<pre><code class="scala">trait Triple[A] {
-  def triple(a: A): A
-}
 
-object TripleInt extends Triple[Int] {
-  def triple(a: Int): Int = a * 3
-}
-
-// old way, not stateful
-class TripleWrapper(a: Int) {
-  def triple: Int = a * 3
-}
-</code></pre>
-
-
-<pre><code class="scala">trait JsonWriter[A] {
-  def write(a: A): String
-}
-
-object JsonWriterInt extends JsonWriter[Int] {
-  def write(a: Int): String = a.toString
-}
-
-// old way, not stateful
-class JsonWrapper(a: Int) {
-  def write: String = a.toString
-}
-</code></pre>
-
-
-<pre><code class="scala">// a B that can do A
-type X = A[B]
-
-type Y = JsonWriter[Dancer]
-
-type Z = Triple[Comedian]
-</code></pre>
-
+# Easy delivery
+Part II, describing type classes
 
 
 # Context bounds
-A tool for writing generic code
+An annotation on type parameters
 
 
 <pre><code class="scala">// providing a driver implicitly, easy peasy
@@ -381,7 +359,7 @@ def inner[A](a: A)(implicit j: JsonWriter[A]) =
 
 
 <pre><code class="scala">// prove to me statically
-// that A can B, given A and B[_]
+// that A can B, given type A and type class B[_]
 
 def foo[A : B] = ???
 
@@ -411,12 +389,35 @@ def inner[A : JsonWriter](a: A) =
 </code></pre>
 
 
+### Context bound dependency injection
+<pre><code class="scala">def inner[A : Writer](a: A): Unit = implicitly[Writer[A]].write(i)
 
-# Resolution
+def outer1[A : Writer](a: A): Unit = inner(a)
+
+def outer2[A : Writer](a: A): Unit = outer1(a)
+
+def outer3[A : Writer](a: A): Unit = outer2(a)
+
+implicit val w = IntWriter
+outer3(42)
+</code></pre>
+
+
+## Context bounds
+* Pro: lighter syntax, especially for deep nesting
+* Con: needs to be summoned at final use site
+
+
+
+# Easy delivery
+Part III, companion resolution
+
+
 Where do the implicits come from?
 
 
-Members of the companion objects<br>for the types in play (A and B)
+## More implicit resolution criteria:
+Includes members of the companion objects<br>for the types in play (A and B)
 <pre><code class="scala">def foo[A : B]</code></pre>
 
 
@@ -426,12 +427,48 @@ object JsonWriter {
 }
 
 // typical of framework consumers, domain classes
-object Dancer {
-  implicit object JsonWriterDancer extends JsonWriter[Dancer]
+object Widget {
+  implicit object JsonWriterDancer extends JsonWriter[Widget]
 }
 
 // one or the other, not both
 </code></pre>
+
+
+|           | JsonWriter[A] |
+|-----------|--------|
+| Int       | JsonWriter[Int]
+| Double    | JsonWriter[Double]
+| String    | JsonWriter[String]
+| ...       | JsonWriter[...]
+| Tuple     | JsonWriter[Tuple]
+| List      | JsonWriter[List]
+| Widget       | JsonWriter[Widget]
+| Sprocket    | JsonWriter[Sprocket]
+
+
+### Companion dependency injection
+<pre><code class="scala">object Writer {
+  implicit val intWriter = ???
+}
+
+def inner[A : Writer](a: A): Unit = implicitly[Writer[A]].write(i)
+
+def outer1[A : Writer](a: A): Unit = inner(a)
+
+def outer2[A : Writer](a: A): Unit = outer1(a)
+
+def outer3[A : Writer](a: A): Unit = outer2(a)
+
+outer3(42)
+</code></pre>
+
+
+## Companion dependency injection
+* Pro: Declutters use sites
+* Pro: Feels cool
+* Con: Not as transparent/easily understood
+* Con: Difficult to track down if companion hierarchy is complex
 
 
 
@@ -490,24 +527,6 @@ def sum[A : Semigroup]: Pipe = ???</code></pre>
 <pre><code class="scala">case class MyCounter()
 
 object MyCounter extends Semigroup[MyCounter]</code></pre>
-
-
-Typical of frameworks
-* Int
-* Double
-* String
-* Float
-* Char
-* Boolean
-* List
-* Tuple
-
-
-
-# The Summit
-
-
-### Scalding uses context bounds on parameterized types to implicitly find a semigroup type class provided by Algebird for safe map reduce.
 
 
 
