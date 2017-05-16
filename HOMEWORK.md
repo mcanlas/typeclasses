@@ -15,6 +15,7 @@
 1. Implement this type class for some primitive.
 1. Satisfy a method with this type class using the implicit parameter style.
 1. Satisfy a method with this type class using type class evidence style.
+1. Use a companion object for implicit resolution.
 
 ## Scalding
 
