@@ -1,6 +1,7 @@
 # Implicits,<br>Type Classes,<br>Algebird
 
-Mark Canlas (@markcanlasnyc) - May 16, 2017
+Mark Canlas (@mark canlas nyc) - May 16, 2017
+
 
 
 # Spoiler alert
@@ -8,14 +9,16 @@ Type classes are drivers
 
 
 # Don't be scared
+Implicits, type classes, algebra, semigroups
 
 
 # Be confident
+New tools, old problems
 
 
 
 # Extending behavior
-The problem statement
+The traditional ways
 
 
 <pre><code class="scala">class Actor(name: String)</code></pre>
@@ -23,7 +26,7 @@ The problem statement
 
 <pre><code class="scala">class Actor(name: String)
 
-// new behaviors
+// new behaviors via extension
 
 class Dancer extends Actor {
   def dance: Unit
@@ -51,16 +54,15 @@ class Comedian(a: FinalActor)</code></pre>
 Run away!
 
 
-# Implicits<br>are not magic
+## Implicits<br>are not magic
 Note: Tool
 
 
-# Compile safe
+## Compile safe
+<code>Ctrl + Q</code>
 
 
-# "implicits"
-
-
+## "implicits"
 * Implicit conversions
 * Implicit parameters
 
@@ -79,8 +81,8 @@ Note: Tool
 <pre><code class="scala">def sum(a: Int)(implicit b: Int)</code></pre>
 
 
-# Implicit parameters
-# are parameters
+## Implicit parameters
+## are parameters
 
 
 <pre><code class="scala">def sum(a: Int)(b: Int)
@@ -119,20 +121,22 @@ format(6789)
 </code></pre>
 
 
-<pre><code class="scala">def execute[A, B](f: A => B)(implicit ec: ExecutionContext)
+<pre><code class="scala">def calculate(a: Int)(implicit ec: ExecutionContext)
 
 // go away, compiler!
 import scala.concurrent.ExecutionContext.Implicits.global
 
-execute()
+calculate(123)
 
-execute(ec)</code></pre>
+calculate(456)(ec)</code></pre>
 
 
 ## Nested implicits
-<pre><code class="scala">def inner(implicit ai: Int): Unit = println(ai)
+<pre><code class="scala">def inner(implicit ai: Int): Unit =
+  println(ai)
 
-def outer(implicit ao: Int): Unit = inner
+def outer(implicit ao: Int): Unit =
+  inner
 
 {
   implicit val a = 3
@@ -144,16 +148,22 @@ outer(4)
 </code></pre>
 
 
+* Useful for hiding boilerplate
+* Season to taste
+
+
 
 # Type classes
 Finally.
 
 
 # Haskell
+f() that.
 
 
-## Implemented with multiple mechanisms in Scala
+## As implemented in Scala
 * Traits
+* Type parameters
 * Implicits
 
 
@@ -166,17 +176,19 @@ Finally.
 # What is a class?
 
 
-<pre><code class="scala">final class Actor(name: String)</code></pre>
+<pre><code class="scala">// a template for values
+final class Actor(name: String)</code></pre>
 
 
-<pre><code class="scala">type A = Actor</code></pre>
+<pre><code class="scala">// Actor itself is not a value
+type A = Actor</code></pre>
 
 
 <pre><code class="scala">// Template + Value(s) = Value</code></pre>
 
 
 # Type classes
-# A class for types
+## A class (a template) for types
 
 
 <pre><code class="scala">// F[_] + A = F[A]</code></pre>
@@ -213,6 +225,10 @@ type B = JsonWriter[Int]
 </code></pre>
 
 
+* Static
+* Canonical
+
+
 <pre><code class="scala">trait Triple[A] {
   def triple(a: A): A
 }
@@ -233,7 +249,7 @@ object JsonWriterInt extends JsonWriter[Int] {
 </code></pre>
 
 
-<pre><code class="scala">// an A that can do B
+<pre><code class="scala">// a B that can do A
 type X = A[B]
 
 type Y = JsonWriter[Dancer]
@@ -247,7 +263,7 @@ type Z = Triple[Comedian]
 A tool for writing generic code
 
 
-<pre><code class="scala">// providing driver implicitly, easy peasy
+<pre><code class="scala">// providing a driver implicitly, easy peasy
 
 def write(a: Int)(implicit j: JsonWriter[Int]) =
   j.write(a)</code></pre>
@@ -263,6 +279,8 @@ def innerWrite[A](a: A)(implicit j: JsonWriter[A]) =
 </code></pre>
 
 
+## Context bound
+On a parameterized type
 <pre><code class="scala">def outerWrite[A : JsonWriter](a: A) =
   innerWrite
 
@@ -273,6 +291,7 @@ def innerWrite[A](a: A)(implicit j: JsonWriter[A]) =
 
 <pre><code class="scala">// prove to me statically
 // that A can B
+// given A and B[_]
 
 def foo[A : B] = ???</code></pre>
 
@@ -305,15 +324,15 @@ def innerWrite[A : JsonWriter](a: A) =
 Algebra for birds
 
 
-# Framework
+## Framework
 By Twitter
 
 
-# Common scenarios, solved
-Monoid, Semigroup
+## Common scenarios, solved
+<code>Monoid</code>, <code>Semigroup</code>
 
 
-# Reliability
+## Reliability
 When's the last time you jumped to definition on <code>Seq</code>?
 
 
@@ -329,43 +348,61 @@ type B = Identity[Int] // + 0
 type C = Sum[String] // _ + _</code></pre>
 
 
-<pre><code class="scala">reduce(_ + _)
+<pre><code class="scala">// also known as "sum"
+
+reduce(_ + _)
 
 reduce(_ * _)
 
 reduce(_ ++ _)</code></pre>
 
 
-
-# Big data
-
-
-
-# Scalding
+## Big data
+Aggregation without ordering
 
 
-<pre><code class="scala">def reduce</code></pre>
+## Scalding
+
+Scala DSL for MapReduce
+
+<pre><code class="scala">// can you prove to me statically
+// that i can reduce over A
+
+def sum[A : Semigroup]: Pipe = ???</code></pre>
 
 
-# Big ideas
+<pre><code class="scala">case class MyCounter()
+
+object MyCounter extends Semigroup[MyCounter]</code></pre>
 
 
-# Implicit parameters
-## A tool to pass around default values
+## Algebird provides solutions
+To commonly occurring problems
 
 
-# Type classes
-## Are drivers
+Typical of frameworks
+* Int
+* Double
+* String
+* Float
+* Char
+* Boolean
+* List
+* Tuple
 
 
-# Algebird
-## A framework for common solutions
+
+# The Summit
+
+
+### Scalding uses context bounds on parameterized types to implicitly find a semigroup type class provided by Algebird.
 
 
 
 # HOMEWORK.MD
 
 
-# github.com / mcanlas / typeclasses
+
+## github.com / mcanlas / typeclasses
 # @mark canlas nyc
 # @tapad eng
