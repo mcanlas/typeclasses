@@ -17,8 +17,8 @@ New tools, old problems
 
 
 
-# Extending behavior
-The traditional ways
+# Extending<br>behavior
+The old school ways
 
 
 <pre><code class="scala">class Actor(name: String)</code></pre>
@@ -54,12 +54,12 @@ class Comedian(a: FinalActor)</code></pre>
 Run away!
 
 
-## Implicits<br>are not magic
+# Implicits
+## are not magic
 Note: Tool
 
 
 ## Compile safe
-<code>Ctrl + Q</code>
 
 
 ## "implicits"
@@ -68,14 +68,14 @@ Note: Tool
 
 
 
-# Implicit conversions
+# Implicit<br>conversions
 
 
 <pre><code class="scala">val shape: RoundHole = ??? : SquarePeg</code></pre>
 
 
 
-# Implicit parameters
+# Implicit<br>parameters
 
 
 <pre><code class="scala">def sum(a: Int)(implicit b: Int)</code></pre>
@@ -140,7 +140,6 @@ def outer(implicit ao: Int): Unit =
 
 {
   implicit val a = 3
-
   outer
 }
 
@@ -161,19 +160,19 @@ Finally.
 f() that.
 
 
-## As implemented in Scala
+## A pattern as implemented in Scala
 * Traits
 * Type parameters
 * Implicits
 
 
-# Clunky name
+## Clunky name
 
 
-# A class for types
+## A class for types
 
 
-# What is a class?
+## What is a class?
 
 
 <pre><code class="scala">// a template for values
@@ -187,22 +186,24 @@ type A = Actor</code></pre>
 <pre><code class="scala">// Template + Value(s) = Value</code></pre>
 
 
-# Type classes
-## A class (a template) for types
+# Type class
+## A template for types
 
 
 <pre><code class="scala">// F[_] + A = F[A]</code></pre>
+Note: Not every trait with a type parameter is a type class
 
 
 <pre><code class="scala">// Actor("Mark") is one value
 
-val b = new Actor("Mark")
+val x = new Actor("Mark")
 
 // F[A] ("F of A") is one type
 
-type B = F[A]</code></pre>
+type X = F[A]</code></pre>
 
 
+## Encoding behavior
 <pre><code class="scala">trait Dancer[A]
 
 trait Comedian[A]
@@ -215,17 +216,17 @@ type B = Comedian[Actor]
 </code></pre>
 
 
+## Drivers
+Data classes, behavior on the outside.
 <pre><code class="scala">// an int that can be tripled
 type A = Triple[Int]
 
 // an int that can be written as json
 type B = JsonWriter[Int]
-
-// a driver, maybe?
 </code></pre>
 
 
-* Static
+* Static (stateless)
 * Canonical
 
 
@@ -236,6 +237,11 @@ type B = JsonWriter[Int]
 object TripleInt extends Triple[Int] {
   def triple(a: Int): Int = a * 3
 }
+
+// old way, not stateful
+class TripleWrapper(a: Int) {
+  def triple: Int = a * 3
+}
 </code></pre>
 
 
@@ -245,6 +251,11 @@ object TripleInt extends Triple[Int] {
 
 object JsonWriterInt extends JsonWriter[Int] {
   def write(a: Int): String = a.toString
+}
+
+// old way, not stateful
+class JsonWrapper(a: Int) {
+  def write: String = a.toString
 }
 </code></pre>
 
@@ -265,42 +276,44 @@ A tool for writing generic code
 
 <pre><code class="scala">// providing a driver implicitly, easy peasy
 
-def write(a: Int)(implicit j: JsonWriter[Int]) =
+def toJson(a: Int)(implicit j: JsonWriter[Int]) =
   j.write(a)</code></pre>
 
 
 <pre><code class="scala">// where am i?
 
-def outerWrite[A](a: A)(implicit j: JsonWriter[A]) =
-  innerWrite
+def toJson[A](a: A)(implicit j: JsonWriter[A]) =
+  inner
 
-def innerWrite[A](a: A)(implicit j: JsonWriter[A]) =
+def inner[A](a: A)(implicit j: JsonWriter[A]) =
   j.write(a)
 </code></pre>
 
 
 ## Context bound
 On a parameterized type
-<pre><code class="scala">def outerWrite[A : JsonWriter](a: A) =
-  innerWrite
+<pre><code class="scala">// syntactic sugar
+def toJson[A : JsonWriter](a: A) =
+  inner
 
-def innerWrite[A](a: A)(implicit j: JsonWriter[A]) =
+def inner[A](a: A)(implicit j: JsonWriter[A]) =
   j.write(a)
 </code></pre>
 
 
 <pre><code class="scala">// prove to me statically
-// that A can B
-// given A and B[_]
+// that A can B, given A and B[_]
 
-def foo[A : B] = ???</code></pre>
+def foo[A : B] = ???
+
+// referred to as "evidence" in the scala spec</code></pre>
 
 
-<pre><code class="scala">def outerWrite[A : JsonWriter](a: A) =
-  innerWrite
+<pre><code class="scala">def toJson[A : JsonWriter](a: A) =
+  inner
 
-// anonymous implicit
-def innerWrite[A : JsonWriter](a: A) = ???
+// anonymous implicit, formerly named `j`
+def inner[A : JsonWriter](a: A) = ???
 </code></pre>
 
 
@@ -308,20 +321,44 @@ def innerWrite[A : JsonWriter](a: A) = ???
 def findImplicit[Z](implicit z: Z) = z
 
 // anonymous implicit
-def innerWrite[A : JsonWriter](a: A) =
+def inner[A : JsonWriter](a: A) =
   findImplicit[JsonWriter[A]].write(a)
 </code></pre>
 
 
 <pre><code class="scala">// anonymous implicit via predef
-def innerWrite[A : JsonWriter](a: A) =
+def inner[A : JsonWriter](a: A) =
   implicitly[JsonWriter[A]].write(a)
+</code></pre>
+
+
+
+# Resolution
+Where do the implicits come from?
+
+
+Members of the companion objects<br>for the types in play (A and B)
+<pre><code class="scala">def foo[A : B]</code></pre>
+
+
+<pre><code class="scala">// typical of framework authors
+object JsonWriter {
+  implicit object JsonWriterInt extends JsonWriter[Int]
+}
+
+// typical of framework consumers, domain classes
+object Dancer {
+  implicit object JsonWriterDancer extends JsonWriter[Dancer]
+}
+
+// one or the other, not both
 </code></pre>
 
 
 
 # Algebird
 Algebra for birds
+Note: The study of structures/properties
 
 
 ## Framework
@@ -329,7 +366,7 @@ By Twitter
 
 
 ## Common scenarios, solved
-<code>Monoid</code>, <code>Semigroup</code>
+With type classes like <code>Monoid</code>, <code>Semigroup</code>
 
 
 ## Reliability
@@ -343,7 +380,7 @@ abstract class MyLinkedList[A]</code></pre>
 
 <pre><code class="scala">type A = Zero[Double] // 0d
 
-type B = Identity[Int] // + 0
+type B = Identity[Int] // _ + 0
 
 type C = Sum[String] // _ + _</code></pre>
 
@@ -366,7 +403,7 @@ Aggregation without ordering
 Scala DSL for MapReduce
 
 <pre><code class="scala">// can you prove to me statically
-// that i can reduce over A
+// that i can reduce over A reliably?
 
 def sum[A : Semigroup]: Pipe = ???</code></pre>
 
@@ -374,10 +411,6 @@ def sum[A : Semigroup]: Pipe = ???</code></pre>
 <pre><code class="scala">case class MyCounter()
 
 object MyCounter extends Semigroup[MyCounter]</code></pre>
-
-
-## Algebird provides solutions
-To commonly occurring problems
 
 
 Typical of frameworks
@@ -395,7 +428,7 @@ Typical of frameworks
 # The Summit
 
 
-### Scalding uses context bounds on parameterized types to implicitly find a semigroup type class provided by Algebird.
+### Scalding uses context bounds on parameterized types to implicitly find a semigroup type class provided by Algebird for safe map reduce.
 
 
 
@@ -404,5 +437,6 @@ Typical of frameworks
 
 
 ## github.com / mcanlas / typeclasses
-# @mark canlas nyc
-# @tapad eng
+## @mark canlas nyc
+## @tapad eng
+We are hiring.

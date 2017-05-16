@@ -47,7 +47,9 @@ body {
   background-color: #fff;
   color: #000; }
 
-.reveal pre code { font-size: 150% }
+.reveal pre code { font-size: 150%; line-height: 1em }
+.reveal h1 { line-height: .9em !important }
+.reveal h2 { line-height: .8em !important }
 /*.reveal code { font-size: 170% }
 
 /*********************************************
