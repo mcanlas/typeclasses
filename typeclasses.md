@@ -4,16 +4,45 @@ Mark Canlas (@mark canlas nyc) - May 16, 2017
 
 
 
-# Spoiler alert
-Type classes are drivers
+<pre><code class="scala">def printAgg[A : Semigroup](a: A, b: A): Unit =
+  printSum(a, b)
+
+def printSum[A : Semigroup](a: A, b: A): Unit =
+  println(sum(a, b))
+
+def sum[A : Semigroup](a: A, b: A): A =
+  implicitly[Semigroup[A]].plus(a, b)</code></pre>
 
 
-# Don't be scared
-Implicits, type classes, algebra, semigroups
+
+# Type classes
+A design pattern for drivers
 
 
-# Be confident
-New tools, old problems
+<code>Semigroup</code> is the type class
+<pre><code class="scala">def printAgg[A : Semigroup](a: A, b: A): Unit =
+  printSum(a, b)
+
+def printSum[A : Semigroup](a: A, b: A): Unit =
+  println(sum(a, b))
+
+def sum[A : Semigroup](a: A, b: A): A =
+  implicitly[Semigroup[A]].plus(a, b)</code></pre>
+
+
+
+# Why type classes?
+
+
+## The ability to extend behavior<br>on arbitrary types
+Including ones you can't control
+
+
+## The ability to easily provide<br>default drivers
+
+
+## Consume drivers in a lightweight syntax
+Either yours or ones given to you
 
 
 
@@ -21,36 +50,79 @@ New tools, old problems
 The old school ways
 
 
-<pre><code class="scala">class Actor(name: String)</code></pre>
+<pre><code class="scala">class Widget
+
+class Sprocket</code></pre>
 
 
-<pre><code class="scala">class Actor(name: String)
-
-// new behaviors via extension
-
-class Dancer extends Actor {
-  def dance: Unit
+<pre><code class="scala">trait JsonWritable {
+  def toJson: String
 }
 
-class Comedian extends Actor {
-  def makeJokes: Unit
-}</code></pre>
+class Widget extends JsonWritable
+
+class Sprocket extends JsonWritable</code></pre>
 
 
-<pre><code class="scala">final class FinalActor(name: String)
-
-Int, String, Double</code></pre>
-
-
-<pre><code class="scala">// wrapper classes
-
-class Dancer(a: FinalActor)
-
-class Comedian(a: FinalActor)</code></pre>
+## Extension via inheritance
+* Pro: easy to understand
+* Con: requires access to modify target types
 
 
+<pre><code class="scala">final class Quark
 
-# Implicits
+// Int, String, Double</code></pre>
+
+
+<pre><code class="scala">class WritableQuark(q: Quark) extends JsonWritable
+
+class WritableInt(i: Int) extends JsonWritable</code></pre>
+
+
+## Extension via wrapping
+* Pro: easy to understand
+* Con: cognitive/mechnical overhead
+
+<code>JsonWritable</code> is the type class
+<pre><code class="scala">trait JsonWritable[A] {
+  def toJson(a: A): String
+}
+
+object QuarkWriter extends JsonWritable[Quark]
+
+object IntWriter extends JsonWritable[Int]</code></pre>
+
+
+## Extension via static methods
+* Pro: Fundamentally a type class
+* Pro: Stateless (easy to test)
+* Pro: Extension on sealed types
+* Con: Boilerplate delivery
+
+
+
+# Easy delivery
+Of default implementations and yours.
+
+
+| Framework | You    |
+|-----------|--------|
+| Int       | Widget
+| Double    | Sprocket
+| String
+| ...
+| Tuple
+| List
+
+
+<pre><code class="scala">JsonWritable[Int] // framework
+
+JsonWritable[Double] // framework
+
+JsonWritable[Widget] // custom</code></pre>
+
+
+## Implicit delivery
 Run away!
 
 
@@ -78,6 +150,10 @@ Note: Tool
 # Implicit<br>parameters
 
 
+## Contrived examples warning
+Use sparingly.
+
+
 <pre><code class="scala">def sum(a: Int)(implicit b: Int)</code></pre>
 
 
@@ -85,21 +161,21 @@ Note: Tool
 ## are parameters
 
 
-<pre><code class="scala">def sum(a: Int)(b: Int)
+<pre><code class="scala">def sum(a: Int)(b: Int): Int = a + b
 
-def sum(a: Int)(implicit b: Int)</code></pre>
+def sum(a: Int)(implicit b: Int): Int = a + b</code></pre>
 
 
 <pre><code class="scala">// satisfied explicitly
 
-sum(2)(3)</code></pre>
+sum(2)(3) // 5</code></pre>
 
 
 <pre><code class="scala">// satisfied implicitly
 
 implicit val b: Int = 3
 
-sum(2)</code></pre>
+sum(2) // 5</code></pre>
 
 
 ## Criteria:
@@ -113,22 +189,26 @@ sum(2)</code></pre>
 
 <pre><code class="scala">def format(n: Int)(implicit loc: Locale)
 
-// a required parameter, and a common value
-
 format(12345)(Locale.US)
 
+implicit defaultLocale: Locale = Locale.US
+
 format(6789)
+
+format(90210)
+
+format(8675)
 </code></pre>
 
 
 <pre><code class="scala">def calculate(a: Int)(implicit ec: ExecutionContext)
 
+calculate(456)(global)
+
 // go away, compiler!
 import scala.concurrent.ExecutionContext.Implicits.global
 
-calculate(123)
-
-calculate(456)(ec)</code></pre>
+calculate(123)</code></pre>
 
 
 ## Nested implicits
@@ -147,8 +227,7 @@ outer(4)
 </code></pre>
 
 
-* Useful for hiding boilerplate
-* Season to taste
+Good for hiding context that is necessary but not essential for a function
 
 
 
