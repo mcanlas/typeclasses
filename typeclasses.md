@@ -15,6 +15,7 @@ Type classes are drivers
 
 
 # Extending behavior
+The problem statement
 
 
 <pre><code class="scala">class Actor(name: String)</code></pre>
@@ -47,6 +48,7 @@ class Comedian(a: FinalActor)</code></pre>
 
 
 # Implicits
+Run away!
 
 
 # Implicits<br>are not magic
@@ -127,8 +129,24 @@ execute()
 execute(ec)</code></pre>
 
 
+## Nested implicits
+<pre><code class="scala">def inner(implicit ai: Int): Unit = println(ai)
+
+def outer(implicit ao: Int): Unit = inner
+
+{
+  implicit val a = 3
+
+  outer
+}
+
+outer(4)
+</code></pre>
+
+
 
 # Type classes
+Finally.
 
 
 # Haskell
@@ -190,6 +208,8 @@ type A = Triple[Int]
 
 // an int that can be written as json
 type B = JsonWriter[Int]
+
+// a driver, maybe?
 </code></pre>
 
 
@@ -224,23 +244,77 @@ type Z = Triple[Comedian]
 
 
 # Context bounds
+A tool for writing generic code
 
 
-<pre><code class="scala">def write(a: Int)(implicit j: JsonWriter[Int]) =
+<pre><code class="scala">// providing driver implicitly, easy peasy
+
+def write(a: Int)(implicit j: JsonWriter[Int]) =
   j.write(a)</code></pre>
 
 
-# Collections
-A love letter
+<pre><code class="scala">// where am i?
+
+def outerWrite[A](a: A)(implicit j: JsonWriter[A]) =
+  innerWrite
+
+def innerWrite[A](a: A)(implicit j: JsonWriter[A]) =
+  j.write(a)
+</code></pre>
+
+
+<pre><code class="scala">def outerWrite[A : JsonWriter](a: A) =
+  innerWrite
+
+def innerWrite[A](a: A)(implicit j: JsonWriter[A]) =
+  j.write(a)
+</code></pre>
+
+
+<pre><code class="scala">// prove to me statically
+// that A can B
+
+def foo[A : B] = ???</code></pre>
+
+
+<pre><code class="scala">def outerWrite[A : JsonWriter](a: A) =
+  innerWrite
+
+// anonymous implicit
+def innerWrite[A : JsonWriter](a: A) = ???
+</code></pre>
+
+
+<pre><code class="scala">// where Z is JsonWriter[A]
+def findImplicit[Z](implicit z: Z) = z
+
+// anonymous implicit
+def innerWrite[A : JsonWriter](a: A) =
+  findImplicit[JsonWriter[A]].write(a)
+</code></pre>
+
+
+<pre><code class="scala">// anonymous implicit via predef
+def innerWrite[A : JsonWriter](a: A) =
+  implicitly[JsonWriter[A]].write(a)
+</code></pre>
+
+
+
+# Algebird
+Algebra for birds
 
 
 # Framework
+By Twitter
 
 
-# Reliable
+# Common scenarios, solved
+Monoid, Semigroup
 
 
-# Common
+# Reliability
+When's the last time you jumped to definition on <code>Seq</code>?
 
 
 <pre><code class="scala">// proceed with caution
@@ -248,20 +322,23 @@ A love letter
 abstract class MyLinkedList[A]</code></pre>
 
 
-# Case closed.
+<pre><code class="scala">type A = Zero[Double] // 0d
+
+type B = Identity[Int] // + 0
+
+type C = Sum[String] // _ + _</code></pre>
 
 
+<pre><code class="scala">reduce(_ + _)
 
-# Algebird
+reduce(_ * _)
 
+reduce(_ ++ _)</code></pre>
 
-# By Twitter
-
-
-# Semigroup
 
 
 # Big data
+
 
 
 # Scalding
@@ -289,5 +366,6 @@ abstract class MyLinkedList[A]</code></pre>
 # HOMEWORK.MD
 
 
+# github.com / mcanlas / typeclasses
 # @mark canlas nyc
 # @tapad eng
