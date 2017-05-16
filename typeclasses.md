@@ -1,0 +1,293 @@
+# Implicits,<br>Type Classes,<br>Algebird
+
+Mark Canlas (@markcanlasnyc) - May 16, 2017
+
+
+# Spoiler alert
+Type classes are drivers
+
+
+# Don't be scared
+
+
+# Be confident
+
+
+
+# Extending behavior
+
+
+<pre><code class="scala">class Actor(name: String)</code></pre>
+
+
+<pre><code class="scala">class Actor(name: String)
+
+// new behaviors
+
+class Dancer extends Actor {
+  def dance: Unit
+}
+
+class Comedian extends Actor {
+  def makeJokes: Unit
+}</code></pre>
+
+
+<pre><code class="scala">final class FinalActor(name: String)
+
+Int, String, Double</code></pre>
+
+
+<pre><code class="scala">// wrapper classes
+
+class Dancer(a: FinalActor)
+
+class Comedian(a: FinalActor)</code></pre>
+
+
+
+# Implicits
+
+
+# Implicits<br>are not magic
+Note: Tool
+
+
+# Compile safe
+
+
+# "implicits"
+
+
+* Implicit conversions
+* Implicit parameters
+
+
+
+# Implicit conversions
+
+
+<pre><code class="scala">val shape: RoundHole = ??? : SquarePeg</code></pre>
+
+
+
+# Implicit parameters
+
+
+<pre><code class="scala">def sum(a: Int)(implicit b: Int)</code></pre>
+
+
+# Implicit parameters
+# are parameters
+
+
+<pre><code class="scala">def sum(a: Int)(b: Int)
+
+def sum(a: Int)(implicit b: Int)</code></pre>
+
+
+<pre><code class="scala">// satisfied explicitly
+
+sum(2)(3)</code></pre>
+
+
+<pre><code class="scala">// satisfied implicitly
+
+implicit val b: Int = 3
+
+sum(2)</code></pre>
+
+
+## Criteria:
+* In scope
+* Type fits
+* Marked as implicit
+
+
+<pre><code class="scala">def format(n: Int)(implicit loc: Locale)</code></pre>
+
+
+<pre><code class="scala">def format(n: Int)(implicit loc: Locale)
+
+// a required parameter, and a common value
+
+format(12345)(Locale.US)
+
+format(6789)
+</code></pre>
+
+
+<pre><code class="scala">def execute[A, B](f: A => B)(implicit ec: ExecutionContext)
+
+// go away, compiler!
+import scala.concurrent.ExecutionContext.Implicits.global
+
+execute()
+
+execute(ec)</code></pre>
+
+
+
+# Type classes
+
+
+# Haskell
+
+
+## Implemented with multiple mechanisms in Scala
+* Traits
+* Implicits
+
+
+# Clunky name
+
+
+# A class for types
+
+
+# What is a class?
+
+
+<pre><code class="scala">final class Actor(name: String)</code></pre>
+
+
+<pre><code class="scala">type A = Actor</code></pre>
+
+
+<pre><code class="scala">// Template + Value(s) = Value</code></pre>
+
+
+# Type classes
+# A class for types
+
+
+<pre><code class="scala">// F[_] + A = F[A]</code></pre>
+
+
+<pre><code class="scala">// Actor("Mark") is one value
+
+val b = new Actor("Mark")
+
+// F[A] ("F of A") is one type
+
+type B = F[A]</code></pre>
+
+
+<pre><code class="scala">trait Dancer[A]
+
+trait Comedian[A]
+
+// an actor, that can dance
+type A = Dancer[Actor]
+
+// an actor, that can do comedy
+type B = Comedian[Actor]
+</code></pre>
+
+
+<pre><code class="scala">// an int that can be tripled
+type A = Triple[Int]
+
+// an int that can be written as json
+type B = JsonWriter[Int]
+</code></pre>
+
+
+<pre><code class="scala">trait Triple[A] {
+  def triple(a: A): A
+}
+
+object TripleInt extends Triple[Int] {
+  def triple(a: Int): Int = a * 3
+}
+</code></pre>
+
+
+<pre><code class="scala">trait JsonWriter[A] {
+  def write(a: A): String
+}
+
+object JsonWriterInt extends JsonWriter[Int] {
+  def write(a: Int): String = a.toString
+}
+</code></pre>
+
+
+<pre><code class="scala">// an A that can do B
+type X = A[B]
+
+type Y = JsonWriter[Dancer]
+
+type Z = Triple[Comedian]
+</code></pre>
+
+
+
+# Context bounds
+
+
+<pre><code class="scala">def write(a: Int)(implicit j: JsonWriter[Int]) =
+  j.write(a)</code></pre>
+
+
+# Collections
+A love letter
+
+
+# Framework
+
+
+# Reliable
+
+
+# Common
+
+
+<pre><code class="scala">// proceed with caution
+
+abstract class MyLinkedList[A]</code></pre>
+
+
+# Case closed.
+
+
+
+# Algebird
+
+
+# By Twitter
+
+
+# Semigroup
+
+
+# Big data
+
+
+# Scalding
+
+
+<pre><code class="scala">def reduce</code></pre>
+
+
+# Big ideas
+
+
+# Implicit parameters
+## A tool to pass around default values
+
+
+# Type classes
+## Are drivers
+
+
+# Algebird
+## A framework for common solutions
+
+
+
+# HOMEWORK.MD
+
+
+# @mark canlas nyc
+# @tapad eng

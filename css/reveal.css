@@ -47,6 +47,9 @@ body {
   background-color: #fff;
   color: #000; }
 
+.reveal pre code { font-size: 150% }
+/*.reveal code { font-size: 170% }
+
 /*********************************************
  * VIEW FRAGMENTS
  *********************************************/
