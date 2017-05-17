@@ -7,3 +7,7 @@ proably that object + injection == type class
 
 why not hard wire via imports?
 because doesn't control scenarios for types that you didn't cover (only relevant in library author, novel scenarios)
+
+
+what is scalding/algebird?
+what is semigroup?
